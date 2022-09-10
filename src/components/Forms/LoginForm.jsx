@@ -1,28 +1,49 @@
 import {Formik} from "formik";
 import * as Yup from 'yup'
 import Input from "../Input/Input";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import {auth} from "../../config/firebase";
+import {useState} from "react";
+import {useNavigate} from "react-router-dom";
 
-const SignupSchema = Yup.object().shape({
-    username: Yup.string()
+const LoginSchema = Yup.object().shape({
+    email: Yup.string()
         .min(2, 'too short!')
-        .max(16, 'too long!')
+        .max(50, 'too long!')
         .required('required'),
-    email: Yup.string().email('invalid email').required('required'),
     password: Yup.string()
         .min(6, 'too short!')
         .max(16, 'too long!')
         .required('required'),
 });
- const RegisterForm = (props) => {
+ const LoginForm = (props) => {
+     let navigate = useNavigate();
+     const [loading, setLoading] = useState(false)
+     const [error, setError] = useState(false)
+     const handleLogin = async (email, password, reset) => {
+         try {
+             const res = await signInWithEmailAndPassword(auth, email, password)
+             navigate('/profile')
+             console.log(res)
+         } catch (err) {
+             console.log(err)
+             setError(true)
+         }
+
+         reset();
+         setLoading(false)
+
+
+     }
      return(
          <Formik
-             initialValues={{username: '', email: '', password: ''}}
-             validationSchema={SignupSchema}
-             onSubmit={(values, {setSubmitting}) => {
-                 setTimeout(() => {
-                     alert(JSON.stringify(values, null, 2));
-                     setSubmitting(false);
-                 }, 400);
+             initialValues={{email: '',password: ''}}
+             validationSchema={LoginSchema}
+             onSubmit={(values, {setSubmitting, resetForm}) => {
+                 setLoading(true)
+                 console.log(loading)
+                 handleLogin(values.email, values.password, resetForm)
+
              }}
          >
              {({
@@ -35,15 +56,6 @@ const SignupSchema = Yup.object().shape({
                    isSubmitting,
                }) => (
                  <form onSubmit={handleSubmit} className={"flex flex-col px-16 py-6 w-1/2 border mx-auto"}>
-                     <Input
-                         inputChange={handleChange}
-                         inputBlur={handleBlur}
-                         inputValue={values.username}
-                         inputName={"username"}
-                         inputPlaceholder={"how should we call you?"}
-                         inputTouched={touched.username}
-                         inputError={errors.username}
-                     />
                      <Input
                          inputChange={handleChange}
                          inputBlur={handleBlur}
@@ -61,12 +73,13 @@ const SignupSchema = Yup.object().shape({
                          inputError={errors.password}
                      />
                      <button className={"mx-auto mt-6 px-4 py-2 border-2 w-1/2"} type="submit" disabled={isSubmitting}>
-                         Submit
+                         {loading ? "submitting..." : "submit"}
                      </button>
+                     {error ? <span className={"text-red-600 text-xs"}>Something went wrong, please try again!</span> : null}
                  </form>
              )}
          </Formik>
      )
  }
 
- export default RegisterForm
+ export default LoginForm
